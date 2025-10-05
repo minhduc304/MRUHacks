@@ -42,15 +42,6 @@ def detect_colored_blocks(image_path, debug=False):
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         all_contours.extend(contours)
 
-    # if debug:
-    #     # Create combined mask for visualization
-    #     combined_mask = np.zeros_like(hsv[:,:,0])
-    #     for color_range in color_ranges:
-    #         mask = cv2.inRange(hsv, color_range['lower'], color_range['upper'])
-    #         combined_mask = cv2.bitwise_or(combined_mask, mask)
-    #     cv2.imwrite('debug_mask.png', combined_mask)
-    #     print('Saved debug_mask.png')
-
     # Draw all contours on debug image
     if debug:
         debug_img = img.copy()
@@ -71,7 +62,7 @@ def detect_colored_blocks(image_path, debug=False):
                 # Draw filtered blocks in green
                 cv2.rectangle(debug_img, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-        # cv2.imwrite('debug_blocks.png', debug_img)
+        cv2.imwrite('debug_blocks.png', debug_img)
 
     blocks = []
     for contour in all_contours:
@@ -182,25 +173,11 @@ def fill_missing_hours(time_rows):
 
     sorted_times = sorted(time_rows.items(), key=lambda x: x[1])
 
-    # Calculate average pixels per hour
-    time_diffs = []
-    for i in range(len(sorted_times) - 1):
-        time1_str, y1 = sorted_times[i]
-        time2_str, y2 = sorted_times[i + 1]
+    # Calculate average pixels per hour using the shared function
+    avg_pixels_per_hour = calculate_pixels_per_hour(sorted_times)
 
-        dt1 = datetime.strptime(time1_str, "%I:%M %p")
-        dt2 = datetime.strptime(time2_str, "%I:%M %p")
-
-        hour_diff = (dt2 - dt1).total_seconds() / 3600
-        if hour_diff > 0:
-            pixel_diff = y2 - y1
-            pixels_per_hour = pixel_diff / hour_diff
-            time_diffs.append(pixels_per_hour)
-
-    if not time_diffs:
+    if avg_pixels_per_hour == 0:
         return time_rows
-
-    avg_pixels_per_hour = sum(time_diffs) / len(time_diffs)
 
     # Fill in missing hours between consecutive time markers
     filled_times = dict(time_rows)
@@ -468,40 +445,6 @@ def add_minutes_to_time(time_str, minutes):
     new_dt_object = dt_object + timedelta(minutes=minutes)
     return new_dt_object.strftime('%I:%M %p')
 
-def find_time_range(y_start, y_end, time_rows, class_type='Lecture'):
-    """Determine start and end based on vertical position and class type"""
-    if not time_rows:
-        return None, None
-
-    sorted_times = sorted(time_rows.items(), key=lambda x: x[1])
-
-    # Interpolate the start time based on vertical position
-    start_time = interpolate_time(y_start, sorted_times)
-
-    if not start_time:
-        return None, None
-
-    # Calculate block height and check if it's longer than default duration
-    block_height = y_end - y_start
-    pixels_per_hour = calculate_pixels_per_hour(sorted_times)
-
-    # Default durations: Lectures = 90 min, Labs/Tutorials = 60 min
-    if pixels_per_hour > 0:
-        actual_duration_minutes = int((block_height / pixels_per_hour) * 60)
-        print(actual_duration_minutes, block_height)
-
-        # Simple rule: if lecture is detected as longer than 90 min, assume it's 2 hours
-        if class_type == 'Lecture' and actual_duration_minutes > 90:
-            duration = 120
-        elif class_type != 'Lecture' and actual_duration_minutes > 60:
-            duration = actual_duration_minutes  # Use detected duration for labs/tutorials
-        else:
-            duration = 90 if class_type == 'Lecture' else 60
-    else:
-        duration = 90 if class_type == 'Lecture' else 60
-
-    return start_time, add_minutes_to_time(start_time, duration)
-
 def calculate_pixels_per_hour(sorted_times):
     """Calculate average pixels per hour from time markers"""
     if len(sorted_times) < 2:
@@ -565,11 +508,10 @@ def interpolate_time(y_position, sorted_times):
         return sorted_times[-1][0]
 
 if __name__ == "__main__":
-    schedule = "schedules/schedule5.png"
+    schedule = "schedules/schedule2.png"
     colored_blocks = detect_colored_blocks(schedule, debug=False)
     text_regions = extract_text(schedule)
     grid = identify_grid_structure(text_regions)
     classes = extract_classes(text_regions, grid, colored_blocks)
-    print(f"Found {len(classes)} classes:\n")
     for cls in classes:
         print(f"  {cls['course']:15} {cls['type']:12} {cls['day']:5} {cls['start_time']:10} - {cls['end_time']}")
