@@ -35,7 +35,7 @@
         </div>
 
         <div class="my-container">
-          <button class="btn" type="submit">sign up</button>
+          <a href="signup.html" class="btn" style="display: inline-block; text-decoration: none; text-align: center;">sign up</a>
         </div>
 
       </form>
@@ -43,21 +43,62 @@
   </main>
 
   <script>
+    const API_BASE = 'http://localhost:5001/api';
 
     const form = document.getElementById('loginForm');
     const msg = document.getElementById('msg');
-    form.addEventListener('click', loginFunction, false); 
-    function loginFunction() {
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const email = document.getElementById('email').value.trim();
-      const pw = document.getElementById('password').value.trim();
-      if (!email || !pw) {
+      const password = document.getElementById('password').value.trim();
+
+      if (!email || password) {
         msg.textContent = 'Please enter your email and password.';
-        return msg.textContent;
+        msg.style.color = '#f87171';
+        return;
       }
-      msg.textContent = `Welcome, ${email}! (demo)`;
-      return msg.textContent;
-      // window.location.href = 'dashboard.html';
-    };
+      // Disable button during request
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'logging in...';
+
+      try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Store token in localStorage
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          msg.textContent = `Welcome, ${data.user.full_name || email}!`;
+          msg.style.color = '#4ade80';
+
+          // Redirect to upload page after 1 second
+          setTimeout(() => {
+            window.location.href = 'upload.html';
+          }, 1000);
+        } else {
+          msg.textContent = data.error || 'Login failed';
+          msg.style.color = '#f87171';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'log in';
+        }
+      } catch (error) {
+        msg.textContent = 'Network error. Make sure backend is running.';
+        msg.style.color = '#f87171';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'log in';
+      }
+    });
   </script>
 </body>

@@ -8,48 +8,30 @@ import sys
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import jwt
 
 # Import our schedule processing functions
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from find_times import detect_colored_blocks, extract_text, identify_grid_structure, extract_classes
 from find_free_times import find_common_free_times, find_gaps_for_schedule
 
+# Import authentication utilities
+from auth import hash_password, verify_password, create_access_token, token_required, optional_token
+
 app = Flask(__name__)
 CORS(app)  # Allow frontend to call this API
 
 # Initialize Supabase client
 # Get credentials from environment variables
-load_dotenv()
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().replace('\n', '').replace('\r', '').replace(' ', '')
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip().replace('\n', '').replace('\r', '').replace(' ', '')
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("Supabase credentials not found in environment variables")
     print("   Set SUPABASE_URL and SUPABASE_KEY to enable database")
     supabase: Client = None
-else:
-    # Workaround for HTTP/2 stream reset issues: disable HTTP/2
-    import httpx
-
-    # Monkey-patch httpx.Client to default to HTTP/1.1
-    original_client_init = httpx.Client.__init__
-    def patched_init(self, *args, **kwargs):
-        kwargs['http2'] = False
-        original_client_init(self, *args, **kwargs)
-    httpx.Client.__init__ = patched_init
-
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print(f"Supabase client created (HTTP/1.1 enforced)!")
-
-    # Test connection with a simple query
-    # Note: This might fail intermittently due to HTTP/2 stream resets, but actual API calls usually work fine
-    try:
-        test_result = supabase.table('groups').select('id').limit(1).execute()
-        print(f"Connection test passed!")
-    except Exception as e:
-        print(f"Connection test failed: {e}")
-        print(f"   Don't worry - this is likely a transient HTTP/2 issue.")
-        print(f"   API calls should still work fine!")
 
 
 @app.route('/')
@@ -58,15 +40,160 @@ def home():
     return jsonify({
         "message": "Schedule Free Time Finder API",
         "endpoints": [
+            "POST /api/auth/register - Register new user",
+            "POST /api/auth/login - Login user",
+            "GET /api/auth/me - Get current user (protected)",
             "POST /api/groups - Create group",
             "POST /api/groups/<code>/upload - Upload schedule",
             "GET /api/groups/<code>/free-times - Get free times"
         ]
     })
 
+# AUTHENTICATION ENDPOINTS
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """
+    Register a new user
+    """
+    if not supabase:
+        return jsonify({"error": "Database not available"}), 503
+
+    data = request.json
+
+    # Validate required fields
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+    full_name = data.get('full_name', '').strip()
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    # Check if user already exists
+    existing_user = supabase.table('users').select('*').eq('email', email).execute()
+    if len(existing_user.data) > 0:
+        return jsonify({"error": "User with this email already exists"}), 409
+
+    # Hash password
+    password_hash = hash_password(password)
+
+    # Insert user into database
+    try:
+        result = supabase.table('users').insert({
+            "email": email,
+            "password_hash": password_hash,
+            "full_name": full_name
+        }).execute()
+
+        user = result.data[0]
+
+        # Create JWT token
+        token = create_access_token({
+            "user_id": user['id'],
+            "email": user['email']
+        })
+
+        print(f"User registered: {email}")
+
+        return jsonify({
+            "message": "User registered successfully",
+            "user": {
+                "id": user['id'],
+                "email": user['email'],
+                "full_name": user['full_name']
+            },
+            "token": token
+        }), 201
+
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({"error": "Failed to register user"}), 500
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """
+    Login user and return JWT token
+    """
+    if not supabase:
+        return jsonify({"error": "Database not available"}), 503
+
+    data = request.json
+
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    # Get user from database
+    try:
+        result = supabase.table('users').select('*').eq('email', email).execute()
+
+        if len(result.data) == 0:
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        user = result.data[0]
+
+        # Verify password
+        if not verify_password(password, user['password_hash']):
+            return jsonify({"error": "Invalid email or password"}), 401
+
+        # Create JWT token
+        token = create_access_token({
+            "user_id": user['id'],
+            "email": user['email']
+        })
+
+        print(f"User logged in: {email}")
+
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user['id'],
+                "email": user['email'],
+                "full_name": user['full_name']
+            },
+            "token": token
+        }), 200
+
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({"error": "Login failed"}), 500
+
+
+@app.route('/api/auth/me', methods=['GET'])
+@token_required
+def get_current_user(current_user):
+    """
+    Get current authenticated user's information
+
+    Requires: Authorization header with Bearer token
+    """
+    if not supabase:
+        return jsonify({"error": "Database not available"}), 503
+
+    try:
+        # Fetch full user data from database
+        result = supabase.table('users').select('id, email, full_name, created_at').eq('id', current_user['user_id']).execute()
+
+        if len(result.data) == 0:
+            return jsonify({"error": "User not found"}), 404
+
+        user = result.data[0]
+
+        return jsonify({"user": user}), 200
+
+    except Exception as e:
+        print(f"Get user error: {e}")
+        return jsonify({"error": "Failed to fetch user"}), 500
+
 
 @app.route('/api/groups', methods=['POST'])
-def create_group():
+@optional_token
+def create_group(current_user):
     """
     Create a new group
 
@@ -82,11 +209,18 @@ def create_group():
     import secrets
     invite_code = secrets.token_urlsafe(6)[:8]
 
-    # Insert into Supabase
-    result = supabase.table('groups').insert({
+    # Prepare group data
+    group_data = {
         "name": group_name,
         "invite_code": invite_code
-    }).execute()
+    }
+
+    # If user is authenticated, associate group with user
+    if current_user:
+        group_data["created_by"] = current_user['user_id']
+
+    # Insert into Supabase
+    result = supabase.table('groups').insert(group_data).execute()
 
     group = result.data[0]
 
