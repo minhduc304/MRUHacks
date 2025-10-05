@@ -1,0 +1,156 @@
+:root{
+    --colorbackground: #0D395C;
+}
+body{
+--background: #0D395C;
+}
+
+/* --- Clean login design, same dark background --- */
+
+.page {
+  min-height: 100svh;
+  background: var(--background); /* your dark blue stays the same */
+  color: var(--foreground);
+  font-family: var(--font-sans, system-ui, -apple-system, Segoe UI, Roboto, sans-serif);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* Centered content */
+.center {
+  display: grid;
+  place-items: start center;
+  padding: clamp(16px, 4vw, 32px);
+}
+
+/* Logo */
+.header {
+  display: flex;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 28px);
+}
+
+.logo {
+  width: min(500px, 60vw);
+  height: auto;
+}
+
+/* Card */
+.card {
+  background: rgba(255, 255, 255, 0.06); /* transparent white overlay */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.login-card {
+  width: min(420px, 92vw);
+  padding: 2rem 2.4rem;
+  color: var(--card-foreground);
+  backdrop-filter: blur(4px);
+}
+
+/* Title */
+.title {
+  text-align: center;
+  margin-bottom: 1.2rem;
+  font-weight: 800;
+  color: var(--foreground);
+  font-size: 1.6rem;
+}
+
+/* Form fields */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+input[type="email"],
+input[type="password"] {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--foreground);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: calc(var(--radius) + 3px);
+  padding: 12px 14px;
+  font-size: 1rem;
+  width: 100%;
+  transition: 0.2s ease;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary), transparent 75%);
+  outline: none;
+}
+
+/* Checkbox row */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+}
+
+.check input {
+  accent-color: var(--primary);
+}
+
+/* Buttons */
+.btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: calc(var(--radius) + 3px);
+  padding: 0.8rem;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.5rem;
+  transition: 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+/* Links and text */
+.link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.muted {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  font-size: 0.9rem;
+}
