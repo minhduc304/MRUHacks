@@ -8,7 +8,6 @@ import sys
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
-import jwt
 
 # Import our schedule processing functions
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,7 +15,12 @@ from find_times import detect_colored_blocks, extract_text, identify_grid_struct
 from find_free_times import find_common_free_times, find_gaps_for_schedule
 
 # Import authentication utilities
-from auth import hash_password, verify_password, create_access_token, token_required, optional_token
+try:
+    # When running with gunicorn from project root
+    from backend.auth import hash_password, verify_password, create_access_token, token_required, optional_token
+except ImportError:
+    # When running directly with python backend/app.py
+    from auth import hash_password, verify_password, create_access_token, token_required, optional_token
 
 app = Flask(__name__)
 CORS(app)  # Allow frontend to call this API
@@ -331,19 +335,46 @@ def get_free_times(invite_code):
 
     # Find gaps for each schedule
     all_gaps = []
-    for schedule in schedules_result.data:
+    for i, schedule in enumerate(schedules_result.data):
         gaps = find_gaps_for_schedule(schedule["classes"], min_gap_minutes=30)
+        # Count total gaps across all days
+        total_gaps = sum(len(day_gaps) for day_gaps in gaps.values()) if isinstance(gaps, dict) else len(gaps)
+        print(f"Person {i+1} ({schedule.get('user_name', 'Unknown')}): {total_gaps} gaps found")
         all_gaps.append(gaps)
 
     # Find common free times
     common_gaps = find_common_free_times(all_gaps, min_gap_minutes=30)
 
     print(f"Calculated free times for group {invite_code} with {len(schedules_result.data)} people")
+    print(f"Common free times found: {len(common_gaps)}")
+    print(f"Common gaps: {common_gaps}")
+
+    # Transform format: {"Mon": [...], "Tue": [...]} -> [{"day": "Monday", ...}, ...]
+    day_name_map = {
+        "Mon": "Monday",
+        "Tue": "Tuesday",
+        "Wed": "Wednesday",
+        "Thu": "Thursday",
+        "Fri": "Friday",
+        "Sat": "Saturday",
+        "Sun": "Sunday"
+    }
+
+    formatted_gaps = []
+    for short_day, time_slots in common_gaps.items():
+        full_day = day_name_map.get(short_day, short_day)
+        for slot in time_slots:
+            formatted_gaps.append({
+                "day": full_day,
+                "start_time": slot["start"],
+                "end_time": slot["end"],
+                "duration_minutes": slot["duration_minutes"]
+            })
 
     return jsonify({
         "group_name": group["name"],
         "num_people": len(schedules_result.data),
-        "common_free_times": common_gaps
+        "common_free_times": formatted_gaps
     })
 
 

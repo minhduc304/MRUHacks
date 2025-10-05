@@ -107,19 +107,21 @@
 
     <!-- Step 3: Free times -->
     <section class="card" id="step-free">
-      <h2>3) Common free times</h2>
-      <div id="freeSummary" class="muted">No data yet.</div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">3) Common free times</h2>
+        <button id="copyFreeTimesBtn" class="secondary" enabled>📋 Copy Free Times</button>
+      </div>
+      <div id="freeSummary" class="muted" style="margin-top:10px">No data yet.</div>
       <div id="freeGrid" class="grid" style="margin-top:10px"></div>
+      <div id="copyMsg" class="muted" style="margin-top:8px"></div>
     </section>
   </main>
 
   <script type="module">
-    // ======= CONFIG (locked to your working backend) =======
     const API = "http://10.239.13.107:5001";
     const apiStatusEl = document.getElementById("apiStatus");
-    apiStatusEl.textContent = `API: ${API} — locked`;
+    // apiStatusEl.textContent = `API: ${API} — locked`;
 
-    // ======= ELEMENTS =======
     const groupNameEl = document.getElementById("groupName");
     const inviteCodeEl = document.getElementById("inviteCode");
     const groupMsg = document.getElementById("groupMsg");
@@ -140,10 +142,13 @@
 
     const freeSummary = document.getElementById("freeSummary");
     const freeGrid = document.getElementById("freeGrid");
+    const copyFreeTimesBtn = document.getElementById("copyFreeTimesBtn");
+    const copyMsg = document.getElementById("copyMsg");
 
     // ======= STATE =======
     let currentCode = "";       // active invite code
     let selectedFile = null;    // File object
+    let currentFreeTimesData = null;  // Store latest free times data
 
     // ======= HELPERS =======
     function setActiveCode(code) {
@@ -203,23 +208,51 @@
     }
 
     function renderFreeTimes(data) {
+      currentFreeTimesData = data;  // Store for copying
       freeSummary.innerHTML =
         `<strong>${data.group_name || "Group"}</strong> — ${data.num_people || 0} member(s)`;
       const arr = data.common_free_times || [];
-      if (!arr.length) {
-        freeGrid.innerHTML = "<div class='muted'>No overlaps yet. Upload more schedules.</div>";
+      const numPeople = data.num_people || 0;
+
+      // Only show results when there are 2+ people
+      if (numPeople < 2) {
+        freeGrid.innerHTML = `
+          <div class="muted" style="text-align:center;padding:20px">
+            <strong>Waiting for more people...</strong>
+            <div style="margin-top:6px">At least 2 people need to upload schedules to find common free times.</div>
+          </div>`;
+        copyFreeTimesBtn.disabled = true;
         return;
       }
-      freeGrid.innerHTML = arr.map(t => (
+
+      if (!arr.length) {
+        freeGrid.innerHTML = `
+          <div class="banner err" style="text-align:center">
+            <strong>❌ No common free times found</strong>
+            <div style="margin-top:6px;font-weight:normal">Everyone's schedules are full during the same times. Try adding more people or checking individual schedules.</div>
+          </div>`;
+        copyFreeTimesBtn.disabled = true;
+        return;
+      }
+
+      // Show success banner with count
+      const header = `
+        <div class="banner ok" style="text-align:center;margin-bottom:12px">
+          <strong>✅ Found ${arr.length} common free time${arr.length === 1 ? '' : 's'}!</strong>
+        </div>`;
+
+      freeGrid.innerHTML = header + arr.map(t => (
         `<div class="ft-card">
            <div class="badge">${t.day}</div>
            <div style="margin-top:6px">
-             <span class="badge">${t.start}</span>
+             <span class="badge">${t.start_time}</span>
              <span class="badge">→</span>
-             <span class="badge">${t.end}</span>
+             <span class="badge">${t.end_time}</span>
            </div>
+           <div class="muted" style="margin-top:4px;font-size:.85rem">${t.duration_minutes} min</div>
          </div>`
       )).join("");
+      copyFreeTimesBtn.disabled = false;  // Enable copy button
     }
 
     async function loadFreeTimes(code){
@@ -280,6 +313,44 @@
     groupNameEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") createBtn.click(); });
     inviteCodeEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") useCodeBtn.click(); });
     userNameEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") uploadBtn.click(); });
+
+    // Copy Free Times button
+    copyFreeTimesBtn.addEventListener("click", async () => {
+      if (!currentFreeTimesData) return;
+
+      try {
+        // Format free times as text
+        const arr = currentFreeTimesData.common_free_times || [];
+        let text = `${currentFreeTimesData.group_name || "Group"} - Common Free Times\n`;
+        text += `${currentFreeTimesData.num_people || 0} member(s)\n\n`;
+
+        if (arr.length === 0) {
+          text += "No common free times found.\n";
+        } else {
+          // Group by day
+          const byDay = {};
+          arr.forEach(t => {
+            if (!byDay[t.day]) byDay[t.day] = [];
+            byDay[t.day].push(t);
+          });
+
+          Object.keys(byDay).forEach(day => {
+            text += `${day}:\n`;
+            byDay[day].forEach(t => {
+              text += `  ${t.start_time} - ${t.end_time} (${t.duration_minutes} min)\n`;
+            });
+            text += '\n';
+          });
+        }
+
+        await navigator.clipboard.writeText(text);
+        showMsg(copyMsg, "✅ Free times copied to clipboard!", "ok");
+        setTimeout(() => showMsg(copyMsg, ""), 3000);
+      } catch (e) {
+        showMsg(copyMsg, "❌ Unable to copy to clipboard.", "err");
+        console.error(e);
+      }
+    });
 
     // ======= UPLOAD EVENTS =======
     drop.addEventListener("click", ()=> fileInput.click());

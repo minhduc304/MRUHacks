@@ -183,10 +183,6 @@ def process_schedules(schedule_paths, min_gap_minutes=30, use_cache=True):
             'gaps': gaps
         })
 
-    print("\n" + "="*80)
-    print("COMMON FREE TIME SLOTS (available in ALL schedules)")
-    print("="*80 + "\n")
-
     # Find common free times
     common_gaps = find_common_free_times(all_gaps, min_gap_minutes)
 
