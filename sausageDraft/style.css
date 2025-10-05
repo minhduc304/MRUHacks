@@ -1,26 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 :root{
-    --colorbackground: #0D395C;
+  --ff: "Inter", sans-serif;
+  --colorprimary: #834B3A;
+  --colorsecondary: #5E92C3;
+  --colortetriary: #D57754;
+  --coloraccent: #3D6A94;
+  --h1: bold 80px/10px var(--ff); 
+  --b: bold 20px/10px var(--ff);
+  --p: bold 12px/0rem var(--ff);
 }
+
 body{
---background: #0D395C;
+--background: #8BB5D8;
 }
+
+.my-container {
+    text-align: center;
+}
+
+a{
+    color: #5E92C3;
+    font: var(--p)
+}
+
+p{
+    color: #5E92C3;
+    font: var(--p)
+}
+
+button{
+    color: #3D6A94;
+    font: var(--)
+}
+
+.divider{
+  display: flex;
+  align-items: center;
+}
+
+.divider::before, .divider::after {
+  flex: 1;
+  content: '';
+  padding: 1px;
+  background-color: #5E92C3;
+  margin: 8px;
+}
+
 
 /* --- Clean login design, same dark background --- */
 
 .page {
   min-height: 100svh;
   background: var(--background); /* your dark blue stays the same */
-  color: var(--foreground);
-  font-family: var(--font-sans, system-ui, -apple-system, Segoe UI, Roboto, sans-serif);
+  --ff: "Inter", sans-serif;
   display: grid;
   grid-template-rows: auto 1fr;
 }
 
 /* Centered content */
 .center {
-  display: grid;
-  place-items: start center;
-  padding: clamp(16px, 4vw, 32px);
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Logo */
@@ -35,29 +78,6 @@ body{
   height: auto;
 }
 
-/* Card */
-.card {
-  background: rgba(255, 255, 255, 0.06); /* transparent white overlay */
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-
-.login-card {
-  width: min(420px, 92vw);
-  padding: 2rem 2.4rem;
-  color: var(--card-foreground);
-  backdrop-filter: blur(4px);
-}
-
-/* Title */
-.title {
-  text-align: center;
-  margin-bottom: 1.2rem;
-  font-weight: 800;
-  color: var(--foreground);
-  font-size: 1.6rem;
-}
 
 /* Form fields */
 .form {
@@ -72,32 +92,18 @@ body{
   gap: 6px;
 }
 
-label {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--foreground);
-}
-
 input[type="email"],
 input[type="password"] {
   background: rgba(255, 255, 255, 0.12);
-  color: var(--foreground);
   border: 1.5px solid rgba(255, 255, 255, 0.25);
-  border-radius: calc(var(--radius) + 3px);
+  border-radius: 30px;
   padding: 12px 14px;
   font-size: 1rem;
-  width: 100%;
-  transition: 0.2s ease;
+  width: 85%;
 }
 
 input::placeholder {
   color: rgba(255, 255, 255, 0.6);
-}
-
-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary), transparent 75%);
-  outline: none;
 }
 
 /* Checkbox row */
@@ -120,22 +126,15 @@ input:focus {
 
 /* Buttons */
 .btn {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: #5E92C3;
+  color: #3D6A94;
   border: none;
-  border-radius: calc(var(--radius) + 3px);
+  border-radius: 30px;
   padding: 0.8rem;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 20px;
   cursor: pointer;
-  width: 100%;
-  margin-top: 0.5rem;
-  transition: 0.2s ease;
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.08);
+  width: 50%;
 }
 
 /* Links and text */
