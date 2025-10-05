@@ -210,4 +210,4 @@ if __name__ == '__main__':
     print("  2. Upload schedule: curl -X POST http://localhost:5001/api/groups/group1/upload -F 'file=@schedules/schedule1.png' -F 'user_name=John'")
     print("  3. Get free times: curl http://localhost:5001/api/groups/group1/free-times\n")
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001, host='0.0.0.0')
