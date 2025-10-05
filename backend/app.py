@@ -32,6 +32,17 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     print("Supabase credentials not found in environment variables")
     print("   Set SUPABASE_URL and SUPABASE_KEY to enable database")
     supabase: Client = None
+else:
+    try:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print(f"Supabase client created!")
+
+        # Test connection
+        test_result = supabase.table('groups').select('id').limit(1).execute()
+        print(f"Connection test passed!")
+    except Exception as e:
+        print(f"Supabase connection error: {e}")
+        supabase: Client = None
 
 
 @app.route('/')

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sausage’d — Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page">
+  <div class="my-container">
+
+  <img src="images/Sausage'd.png" width="800"> 
+  
+  </div>
+  <main class="center">
+      <form id="loginForm" class="form" validate>
+        <div class="field" class="my-container">
+          <input id="email" type="email" placeholder="MRU email" required />
+        </div>
+
+        <div class="field" class="my-container">
+          <input id="password" type="password" placeholder="password" required />
+        </div>
+
+        <div class="my-container">
+          <button class="btn" type="submit" > log in</button>
+        </div>
+
+        <div class="my-container">
+          <a href="#">forgot your password?</a>
+        </div>
+
+        <div class="divider">
+          <p> or </p>
+        </div>
+
+        <div class="my-container">
+          <a href="../signup/signup.html" class="btn" style="display: inline-block; text-decoration: none; text-align: center;">sign up</a>
+        </div>
+
+        <p id="msg" class="muted small" style="text-align: center; margin-top: 1rem;"></p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = 'http://localhost:5001/api';
+
+    const form = document.getElementById('loginForm');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      if (!email || !password) {
+        msg.textContent = 'Please enter your email and password.';
+        msg.style.color = '#f87171';
+        return;
+      }
+      // Disable button during request
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'logging in...';
+
+      try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Store token in localStorage
+          localStorage.setItem('auth_token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          msg.textContent = `Welcome, ${data.user.full_name || email}!`;
+          msg.style.color = '#4ade80';
+
+          // Redirect to schedule upload page after 1 second
+          setTimeout(() => {
+            window.location.href = '../ScheduleInsert/schedInsert.html';
+          }, 1000);
+        } else {
+          msg.textContent = data.error || 'Login failed';
+          msg.style.color = '#f87171';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'log in';
+        }
+      } catch (error) {
+        msg.textContent = 'Network error. Make sure backend is running.';
+        msg.style.color = '#f87171';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'log in';
+      }
+    });
+  </script>
+</body>
