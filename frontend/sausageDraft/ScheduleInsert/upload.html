@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sausage’d — Upload & Free Times</title>
+  <style>
+    :root{
+      --brown:#834B3A; --blue:#8BB5D8; --accent:#5E92C3; --dark:#254b6a; --ff:"Inter",system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--ff);background:var(--blue);color:var(--brown)}
+    header{padding:24px 16px;text-align:center}
+    header h1{margin:.5rem 0 0 0;font-size:1.25rem}
+    main{max-width:960px;margin:0 auto;padding:0 16px 48px}
+    .card{background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:18px;margin:16px 0}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:1 1 220px}
+    label{font-weight:600;color:var(--dark)}
+    input[type=text]{padding:.7rem;border:2px solid var(--accent);border-radius:10px;font-size:1rem}
+    button{padding:.8rem 1.1rem;border:0;border-radius:10px;background:var(--brown);color:#fff;font-weight:700;cursor:pointer}
+    button.secondary{background:#efefef;color:#333;border:1px solid #ddd}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .muted{color:#325d82a3;font-size:.95rem}
+    .stack{display:grid;gap:10px}
+    .sep{height:1px;background:#e8edf3;margin:10px 0}
+    .drop{width:320px;aspect-ratio:4/5;background:#d9d9d9;border:2px dashed var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden}
+    .drop::before{content:"+";font-size:3.5rem;color:#fff;background:var(--accent);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .drop.is-drag{background:#eaf2fb}
+    .preview{display:none;max-width:320px;border-radius:12px;margin-top:10px}
+    .bar-wrap{height:8px;background:#eef3f7;border-radius:10px;overflow:hidden;max-width:320px}
+    .bar{height:100%;width:0;background:var(--accent);transition:width .25s}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+    .ft-card{background:#fff;border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,.1);text-align:left}
+    .badge{display:inline-block;padding:.2rem .5rem;border-radius:999px;border:1px solid var(--accent);background:#ecf2f9;color:var(--dark);font-size:.85rem;margin-right:.35rem;margin-bottom:.35rem}
+    .ok{color:seagreen;font-weight:700}
+    .err{color:crimson;font-weight:700}
+    .center{display:flex;align-items:center;gap:10px}
+    .banner{padding:10px 12px;border-radius:10px;margin:8px 0;font-weight:600}
+    .banner.err{background:#ffe8ea;color:#7a0010;border:1px solid #ffb7bf}
+    .banner.ok{background:#e8f8ee;color:#0b6d2b;border:1px solid #b6e3c6}
+    kbd{background:#f1f3f5;border:1px solid #dee2e6;border-bottom-width:2px;padding:0 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="images/Sausage'd.png" alt="Sausage’d" style="max-width:420px;width:90%;height:auto"/>
+    <h1>Upload your schedule and see your group’s common free times</h1>
+    <div id="apiStatus" class="muted" style="margin-top:6px;font-size:.9rem"></div>
+  </header>
+
+  <main>
+    <!-- Step 1: Group -->
+    <section class="card" id="step-group">
+      <h2>1) Choose a group</h2>
+      <div class="row">
+        <div class="stack">
+          <label for="groupName">Create a new group</label>
+          <div class="row">
+            <input id="groupName" type="text" placeholder="Group name (e.g. Sausage 101)" />
+            <button id="createBtn">Create Group</button>
+          </div>
+          <div class="muted">We’ll generate an invite code for you automatically.</div>
+        </div>
+
+        <div class="stack">
+          <label for="inviteCode">…or join an existing group</label>
+          <div class="row">
+            <input id="inviteCode" type="text" placeholder="Enter invite code (e.g. AbC12xy)" />
+            <button id="useCodeBtn" class="secondary">Use Code</button>
+          </div>
+          <div class="muted">If you already have an invite code, paste it here.</div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="row">
+        <div class="stack">
+          <div class="muted">Active group</div>
+          <div class="center">
+            <div id="activeGroup" class="badge">none</div>
+            <button id="copyCodeBtn" class="secondary" disabled>Copy code</button>
+          </div>
+        </div>
+        <p id="groupMsg" class="muted" style="flex:2"></p>
+      </div>
+    </section>
+
+    <!-- Step 2: Upload -->
+    <section class="card" id="step-upload">
+      <h2>2) Upload your schedule</h2>
+      <div class="row" style="align-items:flex-start">
+        <div class="stack">
+          <div id="drop" class="drop"><input id="fileInput" type="file" accept="image/png,image/jpeg" hidden></div>
+          <img id="preview" class="preview" alt="Preview" />
+          <div class="bar-wrap" style="display:none"><div id="bar" class="bar"></div></div>
+        </div>
+        <div class="stack" style="flex:1">
+          <label for="userName">Your name (displayed to group)</label>
+          <input id="userName" type="text" placeholder="e.g. Elijah" />
+          <button id="uploadBtn" disabled>Upload Schedule</button>
+          <div id="uploadMsg" class="muted"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 3: Free times -->
+    <section class="card" id="step-free">
+      <h2>3) Common free times</h2>
+      <div id="freeSummary" class="muted">No data yet.</div>
+      <div id="freeGrid" class="grid" style="margin-top:10px"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    // ======= CONFIG (locked to your working backend) =======
+    const API = "http://10.239.13.107:5001";
+    const apiStatusEl = document.getElementById("apiStatus");
+    apiStatusEl.textContent = `API: ${API} — locked`;
+
+    // ======= ELEMENTS =======
+    const groupNameEl = document.getElementById("groupName");
+    const inviteCodeEl = document.getElementById("inviteCode");
+    const groupMsg = document.getElementById("groupMsg");
+    const activeGroup = document.getElementById("activeGroup");
+    const createBtn = document.getElementById("createBtn");
+    const useCodeBtn = document.getElementById("useCodeBtn");
+    const copyCodeBtn = document.getElementById("copyCodeBtn");
+
+    const stepUpload = document.getElementById("step-upload");
+    const fileInput = document.getElementById("fileInput");
+    const drop = document.getElementById("drop");
+    const preview = document.getElementById("preview");
+    const barWrap = document.querySelector(".bar-wrap");
+    const bar = document.getElementById("bar");
+    const userNameEl = document.getElementById("userName");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const uploadMsg = document.getElementById("uploadMsg");
+
+    const freeSummary = document.getElementById("freeSummary");
+    const freeGrid = document.getElementById("freeGrid");
+
+    // ======= STATE =======
+    let currentCode = "";       // active invite code
+    let selectedFile = null;    // File object
+
+    // ======= HELPERS =======
+    function setActiveCode(code) {
+      currentCode = code;
+      localStorage.setItem("activeInviteCode", code || "");
+      activeGroup.textContent = code || "none";
+      copyCodeBtn.disabled = !code;
+
+      const ok = Boolean(code);
+      // We allow file selection anytime; button remains guarded:
+      document.querySelector("#step-upload h2").style.opacity = ok ? "1" : ".7";
+      uploadBtn.disabled = !ok || !selectedFile || !userNameEl.value.trim();
+
+      if (ok) loadFreeTimes(code);
+    }
+
+    function showMsg(el, text, kind="info") {
+      el.textContent = text || "";
+      el.classList.remove("ok","err","banner");
+      if (text) el.classList.add("banner");
+      if (kind === "ok") el.classList.add("ok");
+      if (kind === "err") el.classList.add("err");
+    }
+
+    // Match terminal behavior exactly: POST /api/groups with JSON {name}
+    async function createGroup(name) {
+      const res = await fetch(`${API}/api/groups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name || "Unnamed Group" })
+      });
+      const raw = await res.text().catch(()=> "");
+      if (!res.ok) {
+        let msg = "";
+        try { msg = JSON.parse(raw)?.error || ""; } catch(_){}
+        throw new Error(msg || raw || `${res.status} ${res.statusText || ""}`.trim());
+      }
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+
+    async function uploadSchedule(inviteCode, file, userName) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("user_name", userName);
+      const res = await fetch(`${API}/api/groups/${encodeURIComponent(inviteCode)}/upload`, {
+        method: "POST",
+        body: fd
+      });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `Upload failed (${res.status})`);
+      return res.json(); // { id, message, user_name, num_classes }
+    }
+
+    async function getFreeTimes(inviteCode) {
+      const res = await fetch(`${API}/api/groups/${encodeURIComponent(inviteCode)}/free-times`);
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `Fetch failed (${res.status})`);
+      return res.json(); // { group_name, num_people, common_free_times: [...] }
+    }
+
+    function renderFreeTimes(data) {
+      freeSummary.innerHTML =
+        `<strong>${data.group_name || "Group"}</strong> — ${data.num_people || 0} member(s)`;
+      const arr = data.common_free_times || [];
+      if (!arr.length) {
+        freeGrid.innerHTML = "<div class='muted'>No overlaps yet. Upload more schedules.</div>";
+        return;
+      }
+      freeGrid.innerHTML = arr.map(t => (
+        `<div class="ft-card">
+           <div class="badge">${t.day}</div>
+           <div style="margin-top:6px">
+             <span class="badge">${t.start}</span>
+             <span class="badge">→</span>
+             <span class="badge">${t.end}</span>
+           </div>
+         </div>`
+      )).join("");
+    }
+
+    async function loadFreeTimes(code){
+      try {
+        freeSummary.textContent = "Loading…";
+        freeGrid.innerHTML = "";
+        const data = await getFreeTimes(code);
+        renderFreeTimes(data);
+      } catch (e) {
+        freeSummary.textContent = "Failed to load free times.";
+        console.error(e);
+      }
+    }
+
+    // ======= GROUP EVENTS =======
+    createBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      console.log("[UI] Create Group clicked");
+      const name = (groupNameEl.value || "").trim() || "Unnamed Group";
+      try {
+        showMsg(groupMsg, `Creating group "${name}"…`);
+        const group = await createGroup(name);
+        if (!group?.invite_code) {
+          console.warn("[createGroup] No invite_code in response:", group);
+        }
+        showMsg(groupMsg, `✅ Created! Code: ${group.invite_code || "(no code returned)"}`, "ok");
+        setActiveCode(group.invite_code || "");
+        inviteCodeEl.value = group.invite_code || "";
+      } catch (e) {
+        console.error(e);
+        showMsg(groupMsg, "❌ " + (e.message || e), "err");
+        alert("Create group failed:\n" + (e.message || e));
+      }
+    });
+
+    useCodeBtn.addEventListener("click", () => {
+      console.log("[UI] Use Code clicked");
+      const code = inviteCodeEl.value.trim();
+      if (!code) {
+        showMsg(groupMsg, "⚠️ Enter an invite code.", "err");
+        return;
+      }
+      showMsg(groupMsg, `Using code: ${code}`, "ok");
+      setActiveCode(code);
+    });
+
+    copyCodeBtn.addEventListener("click", async () => {
+      if (!currentCode) return;
+      try {
+        await navigator.clipboard.writeText(currentCode);
+        showMsg(groupMsg, "Code copied to clipboard.", "ok");
+      } catch {
+        showMsg(groupMsg, "Unable to copy.", "err");
+      }
+    });
+
+    // Enter key shortcuts
+    groupNameEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") createBtn.click(); });
+    inviteCodeEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") useCodeBtn.click(); });
+    userNameEl.addEventListener("keydown",(e)=>{ if(e.key==="Enter") uploadBtn.click(); });
+
+    // ======= UPLOAD EVENTS =======
+    drop.addEventListener("click", ()=> fileInput.click());
+    ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("is-drag"); }));
+    ["dragleave","dragend","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("is-drag"); }));
+    drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+    fileInput.addEventListener("change", e => handleFiles(e.target.files));
+
+    function handleFiles(files){
+      if(!files || !files[0]) return;
+      const f = files[0];
+      if(!/^image\/(png|jpe?g)$/i.test(f.type)){
+        showMsg(uploadMsg, "Please choose a PNG or JPG.", "err");
+        return;
+      }
+      selectedFile = f;
+      const r = new FileReader();
+      r.onload = ev => {
+        preview.src = ev.target.result;
+        preview.style.display = "block";
+        drop.style.backgroundImage = `url(${ev.target.result})`;
+        drop.style.backgroundSize = "cover";
+        drop.style.backgroundPosition = "center";
+      };
+      r.readAsDataURL(f);
+      showMsg(uploadMsg, "");
+      uploadBtn.disabled = !currentCode || !userNameEl.value.trim();
+    }
+
+    userNameEl.addEventListener("input", ()=>{
+      uploadBtn.disabled = !currentCode || !selectedFile || !userNameEl.value.trim();
+    });
+
+    uploadBtn.addEventListener("click", async ()=>{
+      if(!currentCode || !selectedFile || !userNameEl.value.trim()) return;
+      try {
+        showMsg(uploadMsg, "Uploading…");
+        barWrap.style.display = "block";
+        bar.style.width = "35%"; // mock progress (fetch won’t stream)
+
+        const result = await uploadSchedule(currentCode, selectedFile, userNameEl.value.trim());
+
+        bar.style.width = "100%";
+        showMsg(uploadMsg, `✅ ${result.message} (${result.num_classes} classes)`, "ok");
+
+        // Reload free times after a short delay
+        setTimeout(()=> loadFreeTimes(currentCode), 500);
+      } catch (e) {
+        showMsg(uploadMsg, "❌ " + e.message, "err");
+      }
+    });
+
+    // ======= INIT FROM URL (optional deep-link) =======
+    (async function initFromUrl(){
+      console.log("[init] upload.html booting");
+      const params = new URLSearchParams(location.search);
+      const code = params.get("code") || localStorage.getItem("activeInviteCode") || "";
+      if (code) {
+        inviteCodeEl.value = code;
+        setActiveCode(code);
+      }
+    })();
+  </script>
+</body>
+</html>
