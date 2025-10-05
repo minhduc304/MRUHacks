@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root{
+  --ff: "Inter", sans-serif;
+  --colorprimary: #834B3A;
+  --colorsecondary: #5E92C3;
+  --colortetriary: #D57754;
+  --coloraccent: #3D6A94;
+  --h1: bold 80px/10px var(--ff); 
+  --b: bold 20px/10px var(--ff);
+  --p: bold 12px/0rem var(--ff);
+}
+
+body{
+--background: #8BB5D8;
+}
+
+.my-container {
+    text-align: center;
+}
+
+a{
+    color: #5E92C3;
+    font: var(--p)
+}
+
+p{
+    color: #5E92C3;
+    font: var(--p)
+}
+
+button{
+    color: #3D6A94;
+    font: var(--)
+}
+
+.divider{
+  display: flex;
+  align-items: center;
+}
+
+.divider::before, .divider::after {
+  flex: 1;
+  content: '';
+  padding: 1px;
+  background-color: #5E92C3;
+  margin: 8px;
+}
+
+
+/* --- Clean login design, same dark background --- */
+
+.page {
+  min-height: 100svh;
+  background: var(--background); /* your dark blue stays the same */
+  --ff: "Inter", sans-serif;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* Centered content */
+.center {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Logo */
+.header {
+  display: flex;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 28px);
+}
+
+.logo {
+  width: min(500px, 60vw);
+  height: auto;
+}
+
+
+/* Form fields */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+input[type="email"],
+input[type="password"] {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 30px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  width: 85%;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Checkbox row */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foreground);
+}
+
+.check input {
+  accent-color: var(--primary);
+}
+
+/* Buttons */
+.btn {
+  background: #5E92C3;
+  color: #3D6A94;
+  border: none;
+  border-radius: 30px;
+  padding: 0.8rem;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+  width: 50%;
+}
+
+/* Links and text */
+.link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.muted {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  font-size: 0.9rem;
+}
