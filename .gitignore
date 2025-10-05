@@ -4,3 +4,4 @@ doc.md
 /tests
 /schedules
 __pycache__
+/backend/.env

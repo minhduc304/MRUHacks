@@ -14,13 +14,13 @@ def detect_colored_blocks(image_path, debug=False):
     # Define color ranges for different class colors
     # Lower saturation threshold (30 instead of 50) to catch lighter/pastel colors
     color_ranges = [
-        # Teal/Cyan (COMP)
+        # Teal/Cyan
         {'name': 'teal', 'lower': np.array([80, 30, 50]), 'upper': np.array([100, 255, 255])},
         # Blue
         {'name': 'blue', 'lower': np.array([100, 30, 50]), 'upper': np.array([130, 255, 255])},
         # Green
         {'name': 'green', 'lower': np.array([40, 30, 50]), 'upper': np.array([80, 255, 255])},
-        # Yellow/Orange (MATH/ENTR)
+        # Yellow/Orange
         {'name': 'yellow', 'lower': np.array([20, 30, 50]), 'upper': np.array([40, 255, 255])},
         # Red/Pink
         {'name': 'red', 'lower': np.array([0, 30, 50]), 'upper': np.array([20, 255, 255])},
