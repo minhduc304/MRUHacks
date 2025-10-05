@@ -3,3 +3,4 @@
 doc.md
 /tests
 /schedules
+__pycache__
