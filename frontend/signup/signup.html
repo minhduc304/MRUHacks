@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sausage’d — Login</title>
+  <title>Sausage’d — Signup</title>
   <link rel="stylesheet" href="signstyle.css" />
 </head>
 <body class="page">
@@ -15,6 +15,14 @@
   <main class="center">
       <form id="loginForm" class="form" validate>
         <div class="field" class="my-container">
+          <input id="first" type="first" placeholder="first name" required />
+        </div>
+
+        <div class="field" class="my-container">
+          <input id="last" type="last" placeholder="last name" required />
+        </div>
+
+        <div class="field" class="my-container">
           <input id="email" type="email" placeholder="MRU email" required />
         </div>
 
@@ -23,7 +31,7 @@
         </div>
 
         <div class="my-container">
-          <button class="btn" type="submit" > log in</button>
+          <button class="btn" type="submit" > sign up </button>
         </div>
 
         <div class="my-container">
@@ -35,7 +43,7 @@
         </div>
 
         <div class="my-container">
-          <button class="btn" type="submit">sign up</button>
+          <a href="http://127.0.0.1:5500/frontend/login/login.html"class="btn"> back to log in </a>
         </div>
 
       </form>
